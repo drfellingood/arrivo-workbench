@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<!-- Only this site, the one pinned supabase-js file (also checked by SRI in js/load-supabase.js) and Supabase's API.
+     No inline scripts or styles; Trusted Types on. tools/package.mjs narrows connect-src to the configured project. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js; style-src 'self'; img-src 'self' data:; connect-src https://qzcikjcenuywtupzbngm.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types workbench">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-title" content="出岛工作台">
+<meta name="mobile-web-app-capable" content="yes">
+<title>向导工作台 · 出岛</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<div id="app"><noscript><p class="center">需要打开 JavaScript 才能使用向导工作台。JavaScript is required.</p></noscript></div>
+<div id="announce" class="sr-only" aria-live="polite"></div>
+</body>
+</html>

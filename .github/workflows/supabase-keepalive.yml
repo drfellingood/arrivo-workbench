@@ -1,0 +1,64 @@
+# Supabase keep-alive for the free plan (a project with no activity for 7 days is paused). DECISIONS 27, 33 and 52.
+# Lives in the published workbench repository (arrivo-workbench), next to the published config.js, and reads the
+# project URL and the anon key from that file. Both are public by design (they ship in the app and in this page);
+# the database permissions protect the data. So this workflow needs no repository secrets.
+# Copied in by hand together with workbench/dist/ when publishing; see workbench/README.md, section 4.
+#
+# Calls the read-only health check public.ping() (supabase/migrations/0001_booking_requests.sql), which returns 1.
+# Schedule: GitHub cron is UTC. Sunday 23:17 UTC = Monday 09:17 Brisbane (UTC+10 all year).
+# In a public repository GitHub disables scheduled workflows after 60 days without repository activity: re-enable it
+# under Actions, or push any update to this repository.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 23 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: config.js
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Call ping()
+        run: |
+          set -euo pipefail
+          read -r SUPABASE_URL SUPABASE_ANON_KEY < <(node --input-type=module -e "
+            const { pathToFileURL } = await import('node:url');
+            const c = (await import(pathToFileURL('config.js').href)).default;
+            if (c.mode !== 'supabase' || !/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(c.supabaseUrl) || !c.supabaseAnonKey) {
+              console.error('config.js is not a published Supabase config'); process.exit(1);
+            }
+            console.log(c.supabaseUrl, c.supabaseAnonKey);
+          ")
+          auth=()
+          case "$SUPABASE_ANON_KEY" in
+            eyJ*) auth=(-H "Authorization: Bearer ${SUPABASE_ANON_KEY}") ;;
+          esac
+          status=0
+          code=$(curl -sS --max-time 60 --retry 2 --retry-delay 10 --retry-all-errors \
+            -o response.txt -w '%{http_code}' -X POST "${SUPABASE_URL}/rest/v1/rpc/ping" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" "${auth[@]}" \
+            -H 'Content-Type: application/json' -d '{}') || status=$?
+          body=''
+          if [ -f response.txt ]; then body=$(tr -d '[:space:]' < response.txt); fi
+          rm -f response.txt
+          if [ "$status" -eq 0 ] && [ "$code" = "200" ] && [ "$body" = "1" ]; then
+            echo "OK: ping returned 1 (HTTP $code)."
+            exit 0
+          fi
+          echo "::error title=Keep-alive failed::HTTP ${code:-none}, curl exit $status, answer '${body:0:200}'. If the project is paused, restore it in the Supabase dashboard (project home -> Restore), then run this workflow again by hand."
+          exit 1
