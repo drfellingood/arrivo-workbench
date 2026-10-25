@@ -2,6 +2,7 @@
 // Sign-in: email + password, then a TOTP code (first time: set up an authenticator app). Only admin accounts at aal2
 // see data; the database functions check the same (RLS + private.is_admin()), so this page is not the security boundary.
 // Everything a request contains is shown as text (dom.js); nothing is ever parsed as HTML.
+// The password sign-in carries a Cloudflare Turnstile token (captcha.js); the TOTP step does not need one.
 import { h, img, replace } from './dom.js';
 import {
   APPOINTMENT_WINDOW, FILTERS, IDLE_MS, SPAM_MAX, LANGS, actionsFor, brisbaneDate, brisbaneToIso, checkConfig, cleanTotp, filterList,
@@ -12,6 +13,8 @@ import { strings } from './strings.js';
 import { content } from './content.js';
 import { ServiceError, createSupabaseBackend } from './backend-supabase.js';
 import { loadSupabase } from './load-supabase.js';
+import { loadTurnstile } from './load-turnstile.js';
+import { Captcha } from './captcha.js';
 
 const LANG_KEY = 'chudao.workbench.lang';
 const ACTIVE_KEY = 'workbench.lastActive';
@@ -38,6 +41,8 @@ const state = {
   signinNote: '',
   busy: false,
   error: '',
+  checking: false,
+  captcha: null,
   enrollment: null,
   list: null,
   listError: '',
@@ -52,6 +57,11 @@ const state = {
   detail: emptyDetail(),
 };
 let armTimer = null;
+/**
+ * The password as typed, so that a re-render while the person types (the security check finishing in the background)
+ * does not empty the field. Memory only; cleared on sign-in and sign-out.
+ */
+let passwordDraft = '';
 
 const t = () => strings[state.lang];
 const root = () => document.getElementById('app');
@@ -67,6 +77,7 @@ function announce(message) {
 function explain(error) {
   const e = t().errors;
   if (!(error instanceof ServiceError)) return e.generic;
+  if (error.code === 'captcha_unavailable') return e.captchaUnavailable;
   if (error.kind === 'network') return e.network;
   switch (error.code) {
     case 'invalid_credentials': return e.invalidCredentials;
@@ -78,6 +89,8 @@ function explain(error) {
     case 'appointment_in_past': return e.appointmentInPast;
     case 'note_required': return e.noteRequired;
     case 'rate_limited': return e.rateLimited;
+    case 'captcha_failed': return e.captchaFailed;
+    case 'captcha_timeout': return e.captchaTimeout;
     case 'invalid_ids': return fmt(e.tooMany, { max: SPAM_MAX });
     default: return e.other;
   }
@@ -118,6 +131,7 @@ async function signOut(note = '') {
   const email = state.session?.email ?? state.email;
   try { await state.backend?.signOut(); } catch { /* the local session is gone either way */ }
   store.remove('sessionStorage', ACTIVE_KEY);
+  passwordDraft = '';
   resetWork();
   Object.assign(state, { phase: 'signin', session: null, email, signinNote: note, error: '', busy: false });
   render();
@@ -125,6 +139,7 @@ async function signOut(note = '') {
 }
 
 function enterSession(session) {
+  passwordDraft = '';
   lastSaved = 0;
   bump();
   Object.assign(state, { phase: 'session', session, error: '', busy: false, signinNote: '' });
@@ -141,6 +156,7 @@ async function start() {
   const checked = checkConfig(config, window.location.hostname);
   if (!checked.ok) { Object.assign(state, { phase: 'config', configError: checked.error }); render(); return; }
   state.mode = checked.mode;
+  state.captcha = new Captcha({ load: loadTurnstile, siteKey: checked.siteKey, lang: state.lang, onChange: () => { if (state.phase === 'signin') render(); } });
   try {
     if (checked.mode === 'mock') {
       const { MockBackend } = await import('../dev/mock-backend.js');
@@ -171,10 +187,38 @@ async function start() {
 
 async function submitSignIn(email, password) {
   if (!email.trim() || !password) { state.error = t().fillBoth; render(); focusAlert(); return; }
-  Object.assign(state, { busy: true, error: '', email: email.trim(), signinNote: '' });
+  Object.assign(state, { busy: true, checking: true, error: '', email: email.trim(), signinNote: '' });
   render();
-  try { enterSession(await state.backend.signIn(email, password)); }
-  catch (error) { Object.assign(state, { busy: false, error: explain(error) }); render(); focusAlert(); }
+  // One token per attempt: the widget resets after each, so a wrong password can be retried with a fresh one.
+  // No token (Turnstile could not load, failed, timed out): sign in anyway and let Supabase decide (captcha.js).
+  const { token, failure } = await state.captcha.tokenForSignIn();
+  state.checking = false;
+  render();
+  try { enterSession(await state.backend.signIn(email, password, token ?? undefined)); }
+  catch (error) {
+    // Supabase refusing a sign-in that had no token: say why there was none (e.g. "could not load the check").
+    const shown = failure && error instanceof ServiceError && error.code === 'captcha_failed' ? failure : error;
+    Object.assign(state, { busy: false, checking: false, error: explain(shown) });
+    render();
+    focusAlert();
+  }
+}
+
+/** The Turnstile widget lives outside #app (index.html, #captcha): rebuilding the page must not reload its iframe. */
+function syncCaptcha() {
+  const slot = document.getElementById('captcha');
+  const captcha = state.captcha;
+  if (!slot || !captcha) return;
+  slot.setAttribute('aria-label', t().captchaLabel);
+  if (state.phase === 'signin') {
+    slot.hidden = false;
+    if (captcha.lang !== state.lang && !state.busy && captcha.widgetId !== null) { captcha.lang = state.lang; captcha.remove(); }
+    captcha.lang = state.lang;
+    if (captcha.status === 'idle') void captcha.mount(slot);
+  } else {
+    slot.hidden = true;
+    if (captcha.status !== 'idle') captcha.remove();
+  }
 }
 
 async function submitCode(code) {
@@ -304,7 +348,16 @@ function render() {
       }
     }
   })();
+  // A rebuild keeps the focused field (and its caret), e.g. when the security check finishes while someone types.
+  const active = document.activeElement;
+  const keep = active?.id && root()?.contains(active) ? { id: active.id, start: active.selectionStart, end: active.selectionEnd } : null;
   replace(root(), header(), state.mode === 'mock' ? h('p', { class: 'mock-banner' }, s.mockBanner) : null, h('main', { id: 'main' }, view));
+  const again = keep && document.getElementById(keep.id);
+  if (again && !again.disabled && again !== document.activeElement) {
+    again.focus({ preventScroll: true });
+    try { if (typeof keep.start === 'number') again.setSelectionRange(keep.start, keep.end); } catch { /* not a text field */ }
+  }
+  syncCaptcha();
 }
 
 function configView() {
@@ -316,19 +369,29 @@ function configView() {
 function signInView() {
   const s = t();
   const email = h('input', { id: 'email', type: 'email', name: 'email', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', value: state.email, placeholder: 'name@example.com', disabled: state.busy, oninput: event => { state.email = event.target.value; } });
-  const password = h('input', { id: 'password', type: 'password', name: 'password', autocomplete: 'current-password', placeholder: s.password, disabled: state.busy });
+  const password = h('input', { id: 'password', type: 'password', name: 'password', autocomplete: 'current-password', placeholder: s.password, disabled: state.busy, value: passwordDraft, oninput: event => { passwordDraft = event.target.value; } });
+  const captcha = state.captcha?.status;
+  // What the security check needs from the person, unless a sign-in error already says it.
+  const captchaHelp = state.error ? null
+    : captcha === 'unavailable' ? [alertBox(s.errors.captchaUnavailable), button(s.captchaReload, () => void state.captcha.retry(document.getElementById('captcha')), { kind: 'secondary' })]
+    : captcha === 'failed' && !state.busy ? alertBox(s.errors.captchaFailed)
+    : captcha === 'interactive' ? h('p', { class: 'alert note', role: 'status' }, s.captchaInteractive)
+    : captcha === 'expired' ? h('p', { class: 'alert note', role: 'status' }, s.captchaExpired)
+    : null;
   const form = h('form', { method: 'post', novalidate: true, onsubmit: event => { event.preventDefault(); void submitSignIn(email.value, password.value); } },
     h('label', { for: 'email', class: 'label' }, s.email), email,
     h('label', { for: 'password', class: 'label' }, s.password), password,
     alertBox(state.error),
-    button(state.busy ? s.signingIn : s.signIn, null, { type: 'submit', disabled: state.busy }));
+    captchaHelp,
+    button(state.busy ? (state.checking ? s.checking : s.signingIn) : s.signIn, null, { type: 'submit', disabled: state.busy }));
   if (!state.email) requestAnimationFrame(() => { if (document.activeElement === document.body) email.focus(); });
   return h('section', { class: 'card narrow' },
     h('h1', {}, s.title),
     h('p', { class: 'intro' }, s.intro),
     state.signinNote ? h('p', { class: 'alert note', role: 'status' }, state.signinNote) : null,
     form,
-    h('p', { class: 'fine' }, state.mode === 'mock' ? s.mockNote : s.sessionNote));
+    h('p', { class: 'fine' }, state.mode === 'mock' ? s.mockNote : s.sessionNote),
+    h('p', { class: 'fine' }, s.captchaNote));
 }
 
 function deniedView() {

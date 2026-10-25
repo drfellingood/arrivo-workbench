@@ -147,9 +147,14 @@ export class SupabaseBackend {
 
   async current() { return this.describe(await this.session()); }
 
-  async signIn(email, password) {
+  /**
+   * Password sign-in. `captchaToken` is the Turnstile token (one use). Supabase checks it when CAPTCHA protection is on
+   * (Authentication → Attack Protection) and ignores it while that is off; a refused token comes back as `captcha_failed`.
+   */
+  async signIn(email, password, captchaToken) {
     let result;
-    try { result = await this.client.auth.signInWithPassword({ email: String(email).trim(), password }); }
+    const credentials = { email: String(email).trim(), password, ...(captchaToken ? { options: { captchaToken } } : {}) };
+    try { result = await this.client.auth.signInWithPassword(credentials); }
     catch (error) { throw new ServiceError('network', error instanceof Error ? error.message : 'network'); }
     if (result.error || !result.data?.session) throw mapAuthError(result.error);
     return this.describe(result.data.session);

@@ -2,12 +2,17 @@
 <html lang="zh-Hans">
 <head>
 <meta charset="utf-8">
-<!-- Only this site, the one pinned supabase-js file (also checked by SRI in js/load-supabase.js) and Supabase's API.
-     No inline scripts or styles; Trusted Types on. tools/package.mjs narrows connect-src to the configured project. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js; style-src 'self'; img-src 'self' data:; connect-src https://qzcikjcenuywtupzbngm.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types workbench">
+<!-- Only this site, the one pinned supabase-js file (also checked by SRI in js/load-supabase.js), Supabase's API and
+     Cloudflare Turnstile (script, its iframe and its requests: challenges.cloudflare.com, as Cloudflare documents).
+     No inline scripts or styles; Trusted Types on (policies: workbench = supabase-js, turnstile = api.js,
+     default = only Turnstile's own script upgrades; see js/load-turnstile.js). tools/package.mjs narrows the Supabase
+     part of connect-src to the configured project. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; connect-src https://qzcikjcenuywtupzbngm.supabase.co https://challenges.cloudflare.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types workbench turnstile default">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="referrer" content="no-referrer">
+<!-- Only the origin (https://drfellingood.github.io), never the path, and only over HTTPS. Not no-referrer: Turnstile's
+     iframe checks which site it is on, and the widget only allows drfellingood.github.io. -->
+<meta name="referrer" content="strict-origin">
 <meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-title" content="出岛工作台">
 <meta name="mobile-web-app-capable" content="yes">
@@ -20,6 +25,9 @@
 </head>
 <body>
 <div id="app"><noscript><p class="center">需要打开 JavaScript 才能使用向导工作台。JavaScript is required.</p></noscript></div>
+<!-- The Turnstile widget (sign-in only). Outside #app on purpose: #app is rebuilt on every change, and moving an
+     iframe reloads it. -->
+<div id="captcha" class="captcha-slot" role="group" hidden></div>
 <div id="announce" class="sr-only" aria-live="polite"></div>
 </body>
 </html>

@@ -153,6 +153,30 @@ export function serviceTitle(id, lang, content) {
 
 export const isLocalHost = hostname => ['localhost', '127.0.0.1', '[::1]', '::1'].includes(String(hostname));
 
+/**
+ * Cloudflare Turnstile (CAPTCHA in front of Supabase sign-in, supabase/README.md section 2). The site key is public.
+ * The real widget only allows the hostname drfellingood.github.io, so on this computer (localhost) the page uses
+ * Cloudflare's documented test key that always passes (https://developers.cloudflare.com/turnstile/troubleshooting/testing/).
+ * Its dummy token is refused by Supabase once CAPTCHA protection is on there.
+ */
+export const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
+/**
+ * A Turnstile site key: 24 characters, "0x4" + 21 letters, digits, _ or - (like 0x4AAAAAAFizYRLd8XZ4zD4r), or one of
+ * Cloudflare's test site keys (also 24 characters). Secret keys have the same start but are longer (Cloudflare's test
+ * secret keys are 35 characters), so a longer value is refused as a probable secret key (isSecretKeyShaped).
+ */
+export const isSiteKey = key => /^0x4[A-Za-z0-9_-]{21}$/.test(String(key ?? '')) || isTestSiteKey(key);
+/** Cloudflare's test site keys: 1x… / 2x… / 3x… followed by zeros and two letters. Not used by the published config. */
+export const isTestSiteKey = key => /^[123]x0{20}[A-F]{2}$/.test(String(key ?? ''));
+/** Shaped like a Turnstile secret key: 0x… / 1x… / 2x… / 3x… and 30 or more characters. Must never be on a web page. */
+export const isSecretKeyShaped = key => /^[0-3]x[A-Za-z0-9_-]{28,}$/.test(String(key ?? '').trim());
+/** Any secret-key-shaped string inside a text (packager scan). */
+export const SECRET_KEY_IN_TEXT = /(?<![A-Za-z0-9_-])[0-3]x[A-Za-z0-9_-]{28,}(?![A-Za-z0-9_-])/;
+/** A Turnstile token as the widget returns it: printable, no spaces, at most 2048 characters (Cloudflare's documented limit). */
+export const isCaptchaToken = token => typeof token === 'string' && /^[A-Za-z0-9._:+/=-]{10,2048}$/.test(token);
+/** The widget's language for the page language. */
+export const turnstileLanguage = lang => lang === 'zh-Hant' ? 'zh-tw' : lang === 'en' ? 'en' : 'zh-cn';
+
 /** The payload of a JWT, or null when the value is not one. */
 function jwtPayload(token) {
   const parts = String(token).split('.');
@@ -168,11 +192,14 @@ function jwtPayload(token) {
  *   mock:     only on this computer (localhost); the page then loads dev/, which is never deployed.
  *   supabase: https://<project>.supabase.co and the anon / publishable key. A secret / service_role key is refused:
  *             it would bypass every database permission, and this page is public.
- * Returns { ok: true, mode, url, key } or { ok: false, error } with an error code.
+ *             Plus the Turnstile site key (turnstileSiteKey). A test key is refused off this computer; on localhost the
+ *             test key is used whatever is configured (the real widget does not allow localhost).
+ * Returns { ok: true, mode, url, key, siteKey } or { ok: false, error } with an error code.
  */
 export function checkConfig(config, hostname) {
   if (!config || typeof config !== 'object') return { ok: false, error: 'missing' };
-  if (config.mode === 'mock') return isLocalHost(hostname) ? { ok: true, mode: 'mock' } : { ok: false, error: 'mockNotLocal' };
+  const local = isLocalHost(hostname);
+  if (config.mode === 'mock') return local ? { ok: true, mode: 'mock', siteKey: TURNSTILE_TEST_SITE_KEY } : { ok: false, error: 'mockNotLocal' };
   if (config.mode !== 'supabase') return { ok: false, error: 'mode' };
   const url = String(config.supabaseUrl ?? '').trim().replace(/\/+$/, '');
   const key = String(config.supabaseAnonKey ?? '').trim();
@@ -184,5 +211,9 @@ export function checkConfig(config, hostname) {
     if (!payload) return { ok: false, error: 'key' };
     if (payload.role !== 'anon') return { ok: false, error: 'secretKey' };
   }
-  return { ok: true, mode: 'supabase', url, key };
+  const siteKey = String(config.turnstileSiteKey ?? '').trim();
+  if (isSecretKeyShaped(siteKey)) return { ok: false, error: 'siteKeySecret' };
+  if (!isSiteKey(siteKey)) return { ok: false, error: 'siteKey' };
+  if (isTestSiteKey(siteKey) && !local) return { ok: false, error: 'siteKeyTest' };
+  return { ok: true, mode: 'supabase', url, key, siteKey: local ? TURNSTILE_TEST_SITE_KEY : siteKey };
 }
