@@ -16,7 +16,7 @@ export const content = {
     "work": {
       "zh-Hans": "求职起步咨询",
       "zh-Hant": "求職起步諮詢",
-      "en": "Job-hunting starter consultation"
+      "en": "Job search starter consultation"
     },
     "local": {
       "zh-Hans": "本地陪同协助",
@@ -41,12 +41,12 @@ export const content = {
       "service": "arrival",
       "zh-Hans": "落地第一周先办哪些事",
       "zh-Hant": "落地第一週先辦哪些事",
-      "en": "What to do first in my first week"
+      "en": "What to tackle in my first week, and in what order"
     },
     "phone-plan": {
       "service": "arrival",
       "zh-Hans": "手机卡选哪家、怎么办理",
-      "zh-Hant": "手機卡選哪家、怎麼辦理",
+      "zh-Hant": "SIM 卡選哪家、怎麼辦理",
       "en": "Choosing a mobile provider and getting a SIM"
     },
     "bank-account": {
@@ -58,7 +58,7 @@ export const content = {
     "getting-around": {
       "service": "arrival",
       "zh-Hans": "公交怎么坐、车费怎么付",
-      "zh-Hant": "公共交通怎麼搭、車資怎麼付",
+      "zh-Hant": "大眾運輸怎麼搭、車資怎麼付",
       "en": "Using public transport and paying fares"
     },
     "food-groceries": {
@@ -71,13 +71,13 @@ export const content = {
       "service": "arrival",
       "zh-Hans": "去哪里租车、要准备什么",
       "zh-Hant": "去哪裡租車、要準備什麼",
-      "en": "Where to rent a car and what you need"
+      "en": "Where to rent a car and what I need"
     },
     "visa-official": {
       "service": "arrival",
       "zh-Hans": "签证问题该去哪个官方渠道问",
       "zh-Hant": "簽證問題該向哪個官方途徑查詢",
-      "en": "Which official source to ask about visa questions"
+      "en": "Which official source to ask about my visa"
     },
     "rental-channels": {
       "service": "housing",
@@ -101,7 +101,7 @@ export const content = {
       "service": "housing",
       "zh-Hans": "合租、独立公寓、学生公寓怎么选",
       "zh-Hant": "合租、獨立公寓、學生公寓怎麼選",
-      "en": "Share house, own apartment or student accommodation"
+      "en": "Share house, an apartment to myself, or student accommodation"
     },
     "application-steps": {
       "service": "housing",
@@ -154,14 +154,14 @@ export const content = {
     "job-ad-red-flags": {
       "service": "work",
       "zh-Hans": "怎么辨别可疑的招聘信息",
-      "zh-Hant": "怎麼分辨可疑的招聘資訊",
+      "zh-Hant": "怎麼分辨可疑的徵才資訊",
       "en": "How to spot suspicious job ads"
     },
     "visa-work-official": {
       "service": "work",
       "zh-Hans": "签证打工条件该去哪个官方渠道查",
       "zh-Hant": "簽證的工作條件該到哪個官方途徑查",
-      "en": "Which official source to check my visa work conditions"
+      "en": "Which official source to check for my visa's work conditions"
     },
     "pay-rights-official": {
       "service": "work",
@@ -173,12 +173,12 @@ export const content = {
       "service": "work",
       "zh-Hans": "税号（TFN）该去哪个官方渠道办",
       "zh-Hant": "稅號（TFN）該到哪個官方途徑申請",
-      "en": "Where to officially apply for a TFN (tax file number)"
+      "en": "The official way to apply for a TFN (tax file number)"
     },
     "phone-store": {
       "service": "local",
       "zh-Hans": "陪我去营业厅办手机卡",
-      "zh-Hant": "陪我去電信門市辦手機卡",
+      "zh-Hant": "陪我去電信門市辦 SIM 卡",
       "en": "Go with me to a phone shop to get a SIM"
     },
     "bank-branch": {
@@ -215,7 +215,7 @@ export const content = {
       "service": "local",
       "zh-Hans": "带我找附近吃饭的地方",
       "zh-Hant": "帶我找附近吃飯的地方",
-      "en": "Find places to eat nearby with me"
+      "en": "Help me find places to eat nearby"
     }
   },
   "otherField": {
