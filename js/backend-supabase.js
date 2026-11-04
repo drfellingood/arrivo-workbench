@@ -172,7 +172,7 @@ export class SupabaseBackend {
     for (const factor of factors?.all ?? []) {
       if (factor.factor_type === 'totp' && factor.status !== 'verified') await auth(() => this.client.auth.mfa.unenroll({ factorId: factor.id }));
     }
-    const enrolled = await auth(() => this.client.auth.mfa.enroll({ factorType: 'totp', issuer: '出岛向导工作台', friendlyName: '出岛向导工作台' }));
+    const enrolled = await auth(() => this.client.auth.mfa.enroll({ factorType: 'totp', issuer: 'Arrivo 向导工作台', friendlyName: 'Arrivo 向导工作台' }));
     if (!enrolled) throw new ServiceError('network', 'no enrolment');
     return { factorId: enrolled.id, secret: String(enrolled.totp.secret), uri: String(enrolled.totp.uri), qrSvg: enrolled.totp.qr_code };
   }

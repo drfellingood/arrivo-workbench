@@ -1,7 +1,7 @@
 {
-  "name": "出岛向导工作台",
-  "short_name": "出岛工作台",
-  "description": "出岛 Arrivo 向导处理预约申请用的工作台。",
+  "name": "Arrivo 向导工作台",
+  "short_name": "Arrivo 工作台",
+  "description": "Arrivo 向导处理预约申请用的工作台。",
   "lang": "zh-Hans",
   "start_url": "./",
   "scope": "./",

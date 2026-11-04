@@ -1,4 +1,4 @@
-// 「出岛」向导工作台 · the guide workbench (DECISIONS 50). A static page: no build step, no server code, no keys in the code.
+// Arrivo 向导工作台 · the guide workbench (DECISIONS 50). A static page: no build step, no server code, no keys in the code.
 // Sign-in: email + password, then a TOTP code (first time: set up an authenticator app). Only admin accounts at aal2
 // see data; the database functions check the same (RLS + private.is_admin()), so this page is not the security boundary.
 // Everything a request contains is shown as text (dom.js); nothing is ever parsed as HTML.

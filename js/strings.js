@@ -3,7 +3,7 @@
 // without the Face ID parts. Service names and questions are not here: they come from content.js (generated).
 
 const zhHans = {
-  brand: '出岛',
+  brand: 'Arrivo',
   title: '向导工作台',
   language: '语言',
   langNames: { 'zh-Hans': '简体', 'zh-Hant': '繁體', en: 'English' },
@@ -63,7 +63,7 @@ const zhHans = {
   thisAccount: '这个账号',
   signOut: '退出登录',
   fillBoth: '请填写邮箱和密码。',
-  intro: '只给「出岛」的向导使用：查看预约申请，确认、婉拒或取消。登录需要密码和验证器 App 里的 6 位验证码。',
+  intro: '只给 Arrivo 的向导使用：查看预约申请，确认、婉拒或取消。登录需要密码和验证器 App 里的 6 位验证码。',
   email: '邮箱',
   password: '密码',
   signingIn: '正在登录…',
@@ -78,7 +78,7 @@ const zhHans = {
   sessionNote: '登录只在这个浏览器标签页有效，关掉浏览器后需要重新登录；闲置 15 分钟自动锁定。',
   need6: '请输入 6 位数字验证码。',
   totpTitle: '两步验证',
-  totpIntro: '打开手机上的验证器 App（例如 Google Authenticator、Microsoft Authenticator），输入「出岛向导工作台」当前显示的 6 位数字。',
+  totpIntro: '打开手机上的验证器 App（例如 Google Authenticator、Microsoft Authenticator），输入「Arrivo 向导工作台」当前显示的 6 位数字。',
   codeLabel: '6 位验证码',
   verifying: '正在验证…',
   verify: '验证',
@@ -146,7 +146,7 @@ const zhHans = {
 };
 
 const zhHant = {
-  brand: '出岛',
+  brand: 'Arrivo',
   title: '嚮導工作台',
   language: '語言',
   langNames: { 'zh-Hans': '简体', 'zh-Hant': '繁體', en: 'English' },
@@ -206,7 +206,7 @@ const zhHant = {
   thisAccount: '這個帳號',
   signOut: '登出',
   fillBoth: '請填寫電子郵件和密碼。',
-  intro: '只供「出岛」的嚮導使用：查看預約申請，確認、婉拒或取消。登入需要密碼和驗證器 App 裡的 6 位驗證碼。',
+  intro: '只供 Arrivo 的嚮導使用：查看預約申請，確認、婉拒或取消。登入需要密碼和驗證器 App 裡的 6 位驗證碼。',
   email: '電子郵件',
   password: '密碼',
   signingIn: '正在登入…',
@@ -221,7 +221,7 @@ const zhHant = {
   sessionNote: '登入只在這個瀏覽器分頁有效，關閉瀏覽器後需要重新登入；閒置 15 分鐘自動鎖定。',
   need6: '請輸入 6 位數字驗證碼。',
   totpTitle: '兩步驗證',
-  totpIntro: '打開手機上的驗證器 App（例如 Google Authenticator、Microsoft Authenticator），輸入「出岛向导工作台」目前顯示的 6 位數字。',
+  totpIntro: '打開手機上的驗證器 App（例如 Google Authenticator、Microsoft Authenticator），輸入「Arrivo 向导工作台」目前顯示的 6 位數字。',
   codeLabel: '6 位驗證碼',
   verifying: '正在驗證…',
   verify: '驗證',
@@ -364,7 +364,7 @@ const en = {
   sessionNote: 'Your sign-in lasts only for this browser tab; after closing the browser you sign in again. It locks after 15 minutes of inactivity.',
   need6: 'Please enter the 6-digit code.',
   totpTitle: 'Two-step verification',
-  totpIntro: 'Open the authenticator app on your phone (e.g. Google Authenticator or Microsoft Authenticator) and enter the 6 digits shown for “出岛向导工作台”.',
+  totpIntro: 'Open the authenticator app on your phone (e.g. Google Authenticator or Microsoft Authenticator) and enter the 6 digits shown for “Arrivo 向导工作台”.',
   codeLabel: '6-digit code',
   verifying: 'Verifying…',
   verify: 'Verify',
